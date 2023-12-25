@@ -1,11 +1,6 @@
 const std = @import("std");
-// const try stdout.print = std.debug.try stdout.print;
 const testing = std.testing;
 const parseInt = std.fmt.parseInt;
-
-const AV1RED = "\x33[38;5;161m";
-const GREY = "\x33[38;5;248m";
-const RESET = "\x33[0m";
 
 pub fn main() !void {
     // Get stdout try stdout.printer
