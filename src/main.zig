@@ -3,7 +3,6 @@ const testing = std.testing;
 const parseInt = std.fmt.parseInt;
 
 pub fn main() !void {
-    // Get stdout try stdout.printer
     const stdout = std.io.getStdOut().writer();
 
     // Get allocator
@@ -15,38 +14,43 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    const NegError = error{IsNegative};
-
-    const bitrateTarget = enum(u4) {
-        lowest = 1,
-        low = 2,
-        med = 3,
-        high = 4,
+    // Error union for negative integers
+    const InputError = error{
+        WrongArgCount,
+        IsNegative,
+        ImpEncoderTarg,
+        ImpBitrateTarg,
+        ImpSpeedTarg,
     };
 
-    const encoderTarget = enum(u4) {
-        aom = 1,
-        svt = 2,
-        rav1e = 3,
-    };
-
-    const speedTarget = enum(u4) {
-        slower = 1,
-        slow = 2,
-        med = 3,
-        fast = 4,
-        faster = 5,
-    };
+    // Enums for bitrate target, encoder target, and speed target
+    const bitrateTarget = enum(u4) { lowest, low, med, high };
+    const encoderTarget = enum(u4) { aom, svt, rav1e };
+    const speedTarget = enum(u4) { slower, slow, med, fast, faster };
 
     if (args.len == 1) { // if the user provided no args ...
         try stdout.print("Please provide at least 6 arguments.\n", .{});
         try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
-        return;
+        return InputError.WrongArgCount;
     }
 
     if (std.mem.eql(u8, args[1], "-h")) { // if the user provided `-h` ...
-        _ = try help(); // run the help function to try stdout.print the help menu
+        _ = try help(); // run the help function to print the help menu
         return;
+    }
+
+    // too few args
+    if (args.len < 7) {
+        try stdout.print("Please provide at least 6 arguments.\n", .{});
+        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+        return InputError.WrongArgCount;
+    }
+
+    // too many args
+    if (args.len > 7) {
+        try stdout.print("Please provide at most 6 arguments.\n", .{});
+        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+        return InputError.WrongArgCount;
     }
 
     // check if the user provided a negative integer
@@ -57,22 +61,8 @@ pub fn main() !void {
         if (isNeg < 0) {
             try stdout.print("Please provide positive integers.\n", .{});
             try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
-            return NegError.IsNegative;
+            return InputError.IsNegative;
         }
-    }
-
-    // too few args
-    if (args.len < 7) {
-        try stdout.print("Please provide at least 4 arguments.\n", .{});
-        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
-        return;
-    }
-
-    // too many args
-    if (args.len > 7) {
-        try stdout.print("Please provide at most 4 arguments.\n", .{});
-        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
-        return;
     }
 
     // user-provided encoder. maps to aom, svt, and rav1e
@@ -86,7 +76,7 @@ pub fn main() !void {
         encoder_tgt = encoderTarget.rav1e;
     } else {
         try stdout.print("Please provide a proper encoder argument.\n", .{});
-        return;
+        return InputError.ImpEncoderTarg;
     }
 
     // user-provided bitrate range. maps to lowest, low, medium, and high
@@ -102,7 +92,7 @@ pub fn main() !void {
         bitrate_tgt = bitrateTarget.high;
     } else {
         try stdout.print("Please provide a proper bitrate target argument.\n", .{});
-        return;
+        return InputError.ImpBitrateTarg;
     }
 
     // user-provided speed target. maps to slower, slow, med, fast, and faster
@@ -120,7 +110,7 @@ pub fn main() !void {
         speed_tgt = speedTarget.faster;
     } else {
         try stdout.print("Please provide a proper speed target argument.\n", .{});
-        return;
+        return InputError.ImpSpeedTarg;
     }
 
     // calculate x-splits in Av1an based on user-provided fps. multiply it by 60 so it is easier to divide later
@@ -190,7 +180,7 @@ pub fn main() !void {
     // set encoder speed depending on user-provided encoder and speed targets
     var encoderSpeed: u4 = undefined;
     switch (speed_tgt) {
-        speedTarget.slower => {
+        speedTarget.slower => { // "slower" speed target
             if (encoder_tgt == encoderTarget.aom) {
                 encoderSpeed = 3;
             } else if (encoder_tgt == encoderTarget.svt) {
@@ -199,7 +189,7 @@ pub fn main() !void {
                 encoderSpeed = 3;
             }
         },
-        speedTarget.slow => {
+        speedTarget.slow => { // "slow" speed target
             if (encoder_tgt == encoderTarget.aom) {
                 encoderSpeed = 4;
             } else if (encoder_tgt == encoderTarget.svt) {
@@ -208,7 +198,7 @@ pub fn main() !void {
                 encoderSpeed = 4;
             }
         },
-        speedTarget.med => {
+        speedTarget.med => { // "medium" speed target
             if (encoder_tgt == encoderTarget.aom) {
                 encoderSpeed = 5;
             } else if (encoder_tgt == encoderTarget.svt) {
@@ -217,7 +207,7 @@ pub fn main() !void {
                 encoderSpeed = 6;
             }
         },
-        speedTarget.fast => {
+        speedTarget.fast => { // "fast" speed target
             if (encoder_tgt == encoderTarget.aom) {
                 encoderSpeed = 5;
             } else if (encoder_tgt == encoderTarget.svt) {
@@ -226,7 +216,7 @@ pub fn main() !void {
                 encoderSpeed = 8;
             }
         },
-        speedTarget.faster => {
+        speedTarget.faster => { // "faster" speed target
             if (encoder_tgt == encoderTarget.aom) {
                 encoderSpeed = 5;
             } else if (encoder_tgt == encoderTarget.svt) {
@@ -237,31 +227,39 @@ pub fn main() !void {
         },
     }
 
-    // try stdout.print results
+    // print results
     if (encoder_tgt == encoderTarget.aom) {
+        try stdout.print("~~~~\n", .{});
         try stdout.print("Generated Command: ", .{});
         try stdout.print("av1an --resume -i \"INPUT.mkv\" --verbose --split-method av-scenechange -m lsmash -c mkvmerge --sc-downscale-height {d} -e aom --force -v \"--good --bit-depth=10 --tile-columns={d} --tile-rows={d} --end-usage=q --threads=2 --tune=ssim --ssim-rd-mult=125 --tune-content=psy --arnr-maxframes=15 --arnr-strength=2 --enable-cdef=0 --loopfilter-control=3 --quant-sharpness=3 --deltaq-mode=1 --aq-mode=0 --enable-keyframe-filtering=1 --luma-bias=25 --luma-bias-strength=15 --luma-bias-midpoint=66 --enable-qm=1 --quant-b-adapt=1 --lag-in-frames={d} --sb-size=dynamic --disable-kf --kf-max-dist=9999 --cpu-used={d} --cq-level={d} --denoise-noise-level=9 --enable-dnl-denoising=0\" --pix-format yuv420p10le -a \"-c:a libopus -b:a 128k -ac 2\" -x {d} --set-thread-affinity 2 -w 0 -o \"OUTPUT.mkv\"\n", .{ height, colsl, rowsl, lif, encoderSpeed, crf_aom, xs });
+        try stdout.print("~~~~\n", .{});
     } else if (encoder_tgt == encoderTarget.svt) {
+        try stdout.print("~~~~\n", .{});
         try stdout.print("Generated Command: ", .{});
         try stdout.print("av1an --resume -i \"INPUT.mkv\" --verbose --split-method av-scenechange -m lsmash -c mkvmerge --sc-downscale-height {d} -e svt-av1 --force -v \"--tile-rows {d} --tile-columns {d} --input-depth 10 --tune 2 --enable-overlays 1 --enable-qm 1 --qm-min 0 --qm-max 15 --keyint -1 --scd 0 --lp 1 --irefresh-type 1 --crf {d} --preset {d} --film-grain 12 --film-grain-denoise 0\" --pix-format yuv420p10le -a \"-c:a libopus -b:a 128k -ac 2\" -x {d} --set-thread-affinity 2 -w 0 -o \"OUTPUT.mkv\"\n", .{ height, rowsl, colsl, crf_svt, encoderSpeed, xs });
+        try stdout.print("~~~~\n", .{});
     } else if (encoder_tgt == encoderTarget.rav1e) {
+        try stdout.print("~~~~\n", .{});
         try stdout.print("Generated Command: ", .{});
-        try stdout.print("av1an --resume -i \"INPUT.mkv\" --verbose --split-method av-scenechange -m lsmash -c mkvmerge --sc-downscale-height {d} -e rav1e --force -v \"--tile-rows {d} --tile-cols {d} --threads 2 --no-scene-detection -s {d} --quantizer {d} --photon-noise 13\" --pix-format yuv420p10le -a \"-c:a libopus -b:a 128k -ac 2\" -x {d} --set-thread-affinity 2 -w 0 -o \"OUTPUT.mkv\"", .{ height, rows, cols, encoderSpeed, q_rav1e, xs });
+        try stdout.print("av1an --resume -i \"INPUT.mkv\" --verbose --split-method av-scenechange -m lsmash -c mkvmerge --sc-downscale-height {d} -e rav1e --force -v \"--tile-rows {d} --tile-cols {d} --threads 2 --no-scene-detection -s {d} --quantizer {d} --photon-noise 13\" --pix-format yuv420p10le -a \"-c:a libopus -b:a 128k -ac 2\" -x {d} --set-thread-affinity 2 -w 0 -o \"OUTPUT.mkv\"\n", .{ height, rows, cols, encoderSpeed, q_rav1e, xs });
+        try stdout.print("~~~~\n", .{});
     }
 }
 
 fn getTiles(tpx: usize, rowsl_ptr: *usize, colsl_ptr: *usize, ctpx_ptr: *usize, ctar_ptx: *usize) void {
-    // tpx = 2,000,000 results in 1 tile at 1080p, tpx = 1,000,000 results in 2 tiles at 1080p
+    // NOTE: tpx = 2,000,000 results in 1 tile at 1080p, tpx = 1,000,000 results in 2 tiles at 1080p.
+    // By default, tpx is set to 2,000,000. You can change this if you prefer smaller tiles, which come
+    // at the cost of coding efficiency.
 
     // while current tile pixels >= pixels per tile * 4/3
     while (ctpx_ptr.* >= tpx * 4 / 3) {
         if (ctar_ptx.* > 1) {
-            // Subdivide into columns, add 1 to colsl and halve ctar, then halve ctpx
+            // Subdivide into columns, add 1 to colsl, halve ctar, halve ctpx
             colsl_ptr.* += 1;
             ctar_ptx.* /= 2;
             ctpx_ptr.* /= 2;
         } else {
-            // Subdivide into rows, add 1 to rowsl and double ctar, then halve ctpx
+            // Subdivide into rows, add 1 to rowsl, double ctar, halve ctpx
             rowsl_ptr.* += 1;
             ctar_ptx.* *= 2;
             ctpx_ptr.* /= 2;
@@ -272,7 +270,7 @@ fn getTiles(tpx: usize, rowsl_ptr: *usize, colsl_ptr: *usize, ctpx_ptr: *usize, 
 fn help() !void {
     const stdout = std.io.getStdOut().writer();
 
-    // Contains try stdout.print statements for the help menu
+    // Contains print statements for the help menu
     try stdout.print("Av1an Command Generator | AV1 Encoding Helper\n", .{});
     try stdout.print("Generates an AV1 encoding command for live-action encoding with Av1an.\n", .{});
     try stdout.print("Usage: av1an-command-gen [width] [height] [fps] [encoder] [speed] [bitrate_target]\n", .{});
@@ -287,6 +285,8 @@ fn help() !void {
     return;
 }
 
+// Test case for the getTiles function. Tests if the function returns the correct values.
+// If you manually changed the values passed to the getTiles function, you should change the values here too.
 test "getTiles" {
     var testrowsl: usize = 0;
     var testcolsl: usize = 0;
