@@ -2,6 +2,8 @@ const std = @import("std");
 const testing = std.testing;
 const parseInt = std.fmt.parseInt;
 
+const Version = "0.0.1";
+
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
 
@@ -28,28 +30,34 @@ pub fn main() !void {
     const encoderTarget = enum(u4) { aom, svt, rav1e };
     const speedTarget = enum(u4) { slower, slow, med, fast, faster };
 
+    try stdout.print("Av1an Command Generator | AV1 Encoding Helper\n", .{});
+
     if (args.len == 1) { // if the user provided no args ...
         try stdout.print("Please provide at least 6 arguments.\n", .{});
-        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.WrongArgCount;
     }
 
-    if (std.mem.eql(u8, args[1], "-h")) { // if the user provided `-h` ...
+    if (std.mem.eql(u8, args[1], "-h") or std.mem.eql(u8, args[1], "--help")) { // if the user provided `-h` ...
         _ = try help(); // run the help function to print the help menu
+        return;
+    } else if (std.mem.eql(u8, args[1], "-v") or std.mem.eql(u8, args[1], "--version")) { // if the user provided `-v` ...
+        try stdout.print("Version: {s}\n", .{Version});
+        try stdout.print("Author: gianni-rosato on GitHub\n", .{});
         return;
     }
 
     // too few args
     if (args.len < 7) {
         try stdout.print("Please provide at least 6 arguments.\n", .{});
-        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.WrongArgCount;
     }
 
     // too many args
     if (args.len > 7) {
         try stdout.print("Please provide at most 6 arguments.\n", .{});
-        try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.WrongArgCount;
     }
 
@@ -60,7 +68,7 @@ pub fn main() !void {
         // if the argument is less than 0 (it is negative) ...
         if (isNeg < 0) {
             try stdout.print("Please provide positive integers.\n", .{});
-            try stdout.print("Run `av1an-command-gen -h` for more info.\n", .{});
+            try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
             return InputError.IsNegative;
         }
     }
@@ -76,6 +84,7 @@ pub fn main() !void {
         encoder_tgt = encoderTarget.rav1e;
     } else {
         try stdout.print("Please provide a proper encoder argument.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.ImpEncoderTarg;
     }
 
@@ -92,6 +101,7 @@ pub fn main() !void {
         bitrate_tgt = bitrateTarget.high;
     } else {
         try stdout.print("Please provide a proper bitrate target argument.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.ImpBitrateTarg;
     }
 
@@ -110,6 +120,7 @@ pub fn main() !void {
         speed_tgt = speedTarget.faster;
     } else {
         try stdout.print("Please provide a proper speed target argument.\n", .{});
+        try stdout.print("Run `av1an-command-gen --help` for more info.\n", .{});
         return InputError.ImpSpeedTarg;
     }
 
@@ -271,9 +282,8 @@ fn help() !void {
     const stdout = std.io.getStdOut().writer();
 
     // Contains print statements for the help menu
-    try stdout.print("Av1an Command Generator | AV1 Encoding Helper\n", .{});
-    try stdout.print("Generates an AV1 encoding command for live-action encoding with Av1an.\n", .{});
-    try stdout.print("Usage: av1an-command-gen [width] [height] [fps] [encoder] [speed] [bitrate_target]\n", .{});
+    try stdout.print("Generates an AV1 encoding command for live-action encoding with Av1an\n", .{});
+    try stdout.print("Usage: av1an-command-gen [width] [height] [fps] [encoder] [speed] [size]\n", .{});
     try stdout.print("\n", .{});
     try stdout.print("Options:\n", .{});
     try stdout.print("\tWidth:\t\tYour input width in pixels\n", .{});
@@ -281,7 +291,11 @@ fn help() !void {
     try stdout.print("\tfps:\t\tYour input frames per second\n", .{});
     try stdout.print("\tEncoder:\tAccepts `aom`, `svt`, `rav1e`\n", .{});
     try stdout.print("\tSpeed:\t\tAccepts `slower`, `slow`, `med`, `fast`, `faster`\n", .{});
-    try stdout.print("\tBitrate Target:\tAccepts `lowest`, `low`, `med`, `high`\n", .{});
+    try stdout.print("\tSize:\t\tAccepts `lowest`, `low`, `med`, `high`\n", .{});
+    try stdout.print("\n", .{});
+    try stdout.print("Options:\n", .{});
+    try stdout.print("\t--help, -h\tPrints this help menu\n", .{});
+    try stdout.print("\t--version, -v\tPrints version information\n", .{});
     return;
 }
 

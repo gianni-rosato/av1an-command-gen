@@ -1,0 +1,4 @@
+.{
+    .name = "av1an-command-gen",
+    .version = "0.0.1",
+}
