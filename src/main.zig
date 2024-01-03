@@ -39,7 +39,7 @@ pub fn main() !void {
     }
 
     if (std.mem.eql(u8, args[1], "-h") or std.mem.eql(u8, args[1], "--help")) { // if the user provided `-h` ...
-        _ = try help(); // run the help function to print the help menu
+        _ = try printHelp(); // run the help function to print the help menu
         return;
     } else if (std.mem.eql(u8, args[1], "-v") or std.mem.eql(u8, args[1], "--version")) { // if the user provided `-v` ...
         try stdout.print("Version: {s}\n", .{Version});
@@ -278,24 +278,32 @@ fn getTiles(tpx: usize, rowsl_ptr: *usize, colsl_ptr: *usize, ctpx_ptr: *usize, 
     }
 }
 
-fn help() !void {
+fn printHelp() !void {
     const stdout = std.io.getStdOut().writer();
 
+    // Set tabs to actual tabs instead of spaces
+    const helpStr =
+        \\Generates an AV1 encoding command for live-action encoding with Av1an
+        \\
+        \\Usage:
+        \\	av1an-command-gen [width] [height] [fps] [encoder] [speed] [size]
+        \\
+        \\Options:
+        \\    	Width:		Your input width in pixels
+        \\    	Height:		Your input height in pixels
+        \\    	fps:		Your input frames per second
+        \\    	Encoder:	Accepts `aom`, `svt`, `rav1e`
+        \\    	Speed:		Accepts `slower`, `slow`, `med`, `fast`, `faster`
+        \\    	Size:		Accepts `lowest`, `low`, `med`, `high`
+        \\
+        \\Info:
+        \\    	--help, -h	Prints this help menu
+        \\    	--version, -v	Prints version information
+        \\
+    ;
+
     // Contains print statements for the help menu
-    try stdout.print("Generates an AV1 encoding command for live-action encoding with Av1an\n", .{});
-    try stdout.print("Usage: av1an-command-gen [width] [height] [fps] [encoder] [speed] [size]\n", .{});
-    try stdout.print("\n", .{});
-    try stdout.print("Options:\n", .{});
-    try stdout.print("\tWidth:\t\tYour input width in pixels\n", .{});
-    try stdout.print("\tHeight:\t\tYour input height in pixels\n", .{});
-    try stdout.print("\tfps:\t\tYour input frames per second\n", .{});
-    try stdout.print("\tEncoder:\tAccepts `aom`, `svt`, `rav1e`\n", .{});
-    try stdout.print("\tSpeed:\t\tAccepts `slower`, `slow`, `med`, `fast`, `faster`\n", .{});
-    try stdout.print("\tSize:\t\tAccepts `lowest`, `low`, `med`, `high`\n", .{});
-    try stdout.print("\n", .{});
-    try stdout.print("Options:\n", .{});
-    try stdout.print("\t--help, -h\tPrints this help menu\n", .{});
-    try stdout.print("\t--version, -v\tPrints version information\n", .{});
+    try stdout.print("{s}", .{helpStr});
     return;
 }
 
